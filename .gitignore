@@ -1,0 +1,4 @@
+mbed-os/*
+BUILD/*
+__pycache__/*
+*.pyc
