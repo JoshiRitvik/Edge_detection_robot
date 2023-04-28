@@ -10,13 +10,13 @@
 
 #include <cstdlib>
 
-namespace cadmium::blinkySystem {
+namespace cadmium::example::Edge_robot {
 	//! Class for representing the Generator DEVS model state.struct GeneratorState {
 	struct GeneratorState {
 		double sigma;
-		bool val;
+		bool val1,val2,val3;
 		//! Generator state constructor.
-		GeneratorState(): sigma(0), val(0)  {}
+		GeneratorState(): sigma(0), val1(0),val2(0),val3(0)  {}
 	};
 #ifndef NO_LOGGING
 		/**
@@ -26,7 +26,7 @@ namespace cadmium::blinkySystem {
 		 * @return output stream with sigma already inserted.
 		 */
 		std::ostream& operator<<(std::ostream &out, const GeneratorState& state) {
-			out << "Status:, " << state.val; // state to string
+			out << "Status:, " << state.val1 ; // state to string
 			return out;
 		}
 #endif
@@ -36,19 +36,40 @@ namespace cadmium::blinkySystem {
 	 private:
 		
 	 public:
-		Port<bool> out;  
+		Port<bool> out1;  
+		Port<bool> out2;  
+		Port<bool> out3;  
 		float a, b;
+		int sense1,sense2,sense3;
 
 		/**
 		 * Constructor function.
 		 * @param id ID of the new Generator model object.
 		 */
 		Generator(const std::string& id): Atomic<GeneratorState>(id, GeneratorState()) {
-			out = addOutPort<bool>("out");
-			a = 10; b = 20;
-			state.val = 0;
+			out1 = addOutPort<bool>("out1");
+			out2 = addOutPort<bool>("out2");
+			out3 = addOutPort<bool>("out3");
+			a = 10; b = 20; 
 			srand((unsigned) time(NULL));
-			state.sigma = a + (float)rand()/RAND_MAX * (b-a); // sigma takes random values between 1 and 20
+			sense1 = a + (float)rand()/RAND_MAX * (b-a); // sigma takes random values between 1 and 20
+			sense2 = a + (float)rand()/RAND_MAX * (b-a); // sigma takes random values between 1 and 20
+			sense3 = a + (float)rand()/RAND_MAX * (b-a); // sigma takes random values between 1 and 20
+			if(sense1 > 18)
+			 state.val1 = 1;
+			 else
+			 state.val1 = 0;
+			 
+			 if(sense2 > 15)
+			 state.val2 = 1;
+			 else
+			 state.val2 = 0;
+			 
+			 if(sense3 > 10)
+			 state.val3 = 1;
+			 else
+			 state.val3 = 0;
+
 //			printf("[generator] init function\n");
 		}
 
@@ -57,7 +78,7 @@ namespace cadmium::blinkySystem {
 		 * @param state reference to the current state of the model.
 		 */
 		void internalTransition(GeneratorState& state) const override {
-			state.sigma = a + (float)rand()/RAND_MAX * (b-a); // sigma takes random values between 1 and 20 
+			state.sigma = 0.1; // sigma takes random values between 1 and 20 
 //			printf("[generator] internal transition function\n");
 		}
 
@@ -68,7 +89,7 @@ namespace cadmium::blinkySystem {
 		 * @param x reference to the model input port set.
 		 */
 		void externalTransition(GeneratorState& state, double e) const override {
-			state.sigma = std::numeric_limits<double>::infinity();
+			state.sigma = 0.1;
 //			printf("[generator] external transition function\n");
 		}
 
@@ -78,7 +99,10 @@ namespace cadmium::blinkySystem {
 		 * @param y reference to the atomic model output port set.
 		 */
 		void output(const GeneratorState& state) const override {
-			out->addMessage(state.val);
+			out1->addMessage(state.val1);
+			out1->addMessage(state.val2);
+			out1->addMessage(state.val3);
+			std::cout << " data out" << std::endl;
 //			printf("[generator] output function\n");
 		}
 

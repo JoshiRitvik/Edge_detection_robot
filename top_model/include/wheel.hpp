@@ -9,7 +9,8 @@ namespace cadmium::example::Edge_robot {
 	struct wheel_state {
 		double clock;        //!< Current simulation time.
 		double sigma;        //!< Time to wait before triggering the next internal transition function.
-		bool start_stop_input;
+		bool Edge_flag;
+//		int Edge_Ctr;
 		/**
 		 * Transducer model state constructor function.
 		 * @param obsTime total observation time before asking the Generator to stop creating new Job objects.
@@ -24,8 +25,8 @@ namespace cadmium::example::Edge_robot {
 	 * @return output stream with the state already inserted.
 	 */
 	std::ostream& operator<<(std::ostream &out, const wheel_state& s) {
-		out << s.start_stop_input;
-		std::cout << " wheel " << std::endl;
+		out << s.Edge_flag;
+//		std::cout << " wheel " << std::endl;
 		return out;
 	}
 
@@ -34,16 +35,24 @@ namespace cadmium::example::Edge_robot {
 	 private:
 		double DrivePeriod;
 	 public:
-		Port<int> In1;  //!< Input Port for receiving new Job objects.
-		Port<bool> Out;
-		/**
-		 * Constructor function for Transducer atomic DEVS models.
-		 * @param id ID of the new model.
-		 * @param obsTime Time to wait before asking the Generator to stop sending new Job objects to Processor.
-		 */
+		Port<bool> In_Flag;  //!< Input Port for receiving new Job objects.
+		Port<double> wheel_left_fw;
+		Port<double> wheel_left_bw;
+		Port<double> wheel_right_fw;
+		Port<double> wheel_right_bw;
+		Port<bool> wheel_right_en;
+		Port<bool> wheel_left_en;
+		//Port<bool> Out;
+
 		Wheel(const std::string& id, double DrivePeriod): Atomic<wheel_state>(id, wheel_state()), DrivePeriod(DrivePeriod) {
-			In1 = addInPort<int>("In1");
-			Out = addOutPort<bool>("out1");
+			In_Flag = addInPort<bool>("In_Flag");
+			//Out = addOutPort<bool>("out1");
+			wheel_left_fw = addOutPort<double>("wheel_left_fw");
+			wheel_left_bw = addOutPort<double>("wheel_left_bw");
+			wheel_right_fw = addOutPort<double>("wheel_right_fw");
+			wheel_right_bw = addOutPort<double>("wheel_right_bw");
+			wheel_right_en = addOutPort<bool>("wheel_right_en");
+			wheel_left_en = addOutPort<bool>("wheel_left_en");
 		}
 
 		/**
@@ -54,8 +63,7 @@ namespace cadmium::example::Edge_robot {
 		 */
 		void internalTransition(wheel_state& s) const override {
 			s.clock += s.sigma;
-			s.sigma = 100;//std::numeric_limits<double>::infinity();
-
+			s.sigma = std::numeric_limits<double>::infinity(); //100; //
 		}
 
 		/**
@@ -66,19 +74,17 @@ namespace cadmium::example::Edge_robot {
 		 * @param x reference to the model input port set.
 		 */
 		void externalTransition(wheel_state& s, double e) const override {
-			s.clock += e;
-			s.sigma -= e;
-			if (!In1->empty()) {
-				for(const auto x : In1->getBag())
-				{
-					s.start_stop_input = In1->getBag().back();
-					s.sigma = DrivePeriod;
-				}
-
-			}
-			else 
+			if (!In_Flag->empty()) {
+			 	for(const auto x : In_Flag->getBag())
+			 	{
+			 		s.Edge_flag = In_Flag->getBag().back();
+			 	}
+			if(s.Edge_flag == 0)
 			{
-				s.start_stop_input = 0;
+				s.sigma = DrivePeriod;
+			}
+			else
+				s.sigma = DrivePeriod;
 			}
 		}
 
@@ -88,9 +94,28 @@ namespace cadmium::example::Edge_robot {
 		 * @param y reference to the atomic model output port set.
 		 */
 		void output(const wheel_state& s) const override {
-
-			Out->addMessage(s.start_stop_input);
-			std::cout << " Output "<< std::endl;
+			wheel_right_en ->addMessage (true);
+			wheel_left_en ->addMessage (true);
+			if((s.Edge_flag == 0)) //||(s.Edge_Ctr<5)
+			{
+				wheel_left_fw ->addMessage(double(0));
+				wheel_left_bw ->addMessage(double(0.25));
+				wheel_right_fw ->addMessage(double(0));
+				wheel_right_bw ->addMessage(double(0.25));
+				std::cout << "motion backward  " << std::endl;
+				
+			}
+			else
+			{
+				wheel_left_fw ->addMessage(double(0.25));
+				wheel_left_bw ->addMessage(double(0));
+				wheel_right_fw ->addMessage(double(0.65));
+				wheel_right_bw ->addMessage(double(0));	
+				std::cout << "motion forward  " << std::endl;
+//				std::cout << "motion forward  " << std::endl;			
+			}
+			//Out->addMessage(s.start_stop_input);
+//			std::cout << " Output "<< std::endl;
 		}
 
 		/**

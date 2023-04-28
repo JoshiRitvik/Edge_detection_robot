@@ -10,11 +10,11 @@ namespace cadmium::example::Edge_robot {
 	struct motion_controller_State {
 		double clock;                   //!< Current simulation time.
 		double sigma;                   //!< Time to wait before triggering the next internal transition function.
-	 	bool Remote_flag;
+	 	bool Edge_flag;
 		int Obstacle_distance;
-		int start_stop_flag;
+		int fw_bw_flag;
 		//! Processor state constructor. By default, the processor is idling.
-		explicit motion_controller_State(double cmdTime): clock(), sigma(cmdTime), Remote_flag(), Obstacle_distance(), start_stop_flag() {} 
+		explicit motion_controller_State(double cmdTime): clock(), sigma(cmdTime), Edge_flag(), Obstacle_distance(), fw_bw_flag() {} 
 	};
 
 	/**
@@ -24,7 +24,7 @@ namespace cadmium::example::Edge_robot {
 	 * @return output stream with sigma already inserted.
 	 */
 	std::ostream& operator<<(std::ostream &out, const motion_controller_State& s) {
-		out  << "{" << s.Remote_flag << " " << s.Obstacle_distance << " " << s.start_stop_flag << "}";
+//		out  << "{" << s.Remote_flag << " " << s.Obstacle_distance << " " << s.start_stop_flag << "}";
 		return out;
 	}
 
@@ -33,9 +33,11 @@ namespace cadmium::example::Edge_robot {
 	 private:
 		double cmdTime;  //!< Time required by the Processor model to process one Job.
 	 public:
-		Port<bool> Remote_control;  //!< Input Port for receiving new Job objects.
-		Port<int> Proximity_data;  //!< Output Port for sending processed Job objects.
-		Port<int> wheel_speed;
+		Port<bool> sensor_input;  //!< Input Port for receiving new Job objects.
+		Port<bool> sensor_input2;  //!< Output Port for sending processed Job objects.
+		Port<bool> sensor_input3;
+
+		Port<bool> Out_flag;
 
 		/**
 		 * Constructor function.
@@ -43,11 +45,11 @@ namespace cadmium::example::Edge_robot {
 		 * @param cmdTime time it takes the Processor to process a Job.
 		 */
 		Motion_controller(const std::string& id, double cmdTime): Atomic<motion_controller_State>(id, motion_controller_State(cmdTime)) {
-			Remote_control = addInPort<bool>("Remote_control");
-			Proximity_data = addInPort<int>("Proximity_data");
-			wheel_speed = addOutPort<int>("wheel_speed");
-			std::cout << "motion controller  " << std::endl;
+			sensor_input = addInPort<bool>("sensor_input");
+			sensor_input2 = addInPort<bool>("sensor_input2");
+			sensor_input3 = addInPort<bool>("sensor_input3");
 
+			Out_flag = addOutPort<bool>("Out_flag");
 		}
 
 		/**
@@ -55,10 +57,8 @@ namespace cadmium::example::Edge_robot {
 		 * @param s reference to the current state of the model.
 		 */
 		void internalTransition(motion_controller_State& s) const override {
-			std::cout << "motion controller internal" << std::endl;
 			s.clock += s.sigma;
-			//s.currentJob.reset();
-			s.sigma = 100;//std::numeric_limits<double>::infinity();
+			s.sigma = std::numeric_limits<double>::infinity(); //100;
 		}
 
 		/**
@@ -69,30 +69,34 @@ namespace cadmium::example::Edge_robot {
 		 * @param x reference to the model input port set.
 		 */
 		void externalTransition(motion_controller_State& s, double e) const override {
+			bool x,y,z;
 			s.clock += e;
 			s.sigma -= e;
 //			 std::cout << "motion controller external " << std::endl;
-/*			if(!Remote_control->empty()){
-				for( const auto x : Remote_control->getBag()){
-					s.Remote_flag = Remote_control->getBag().back();
-					std::cout << "remote flag " << s.start_stop_flag << std::endl;
-					// if (s.start_stop_flag ==0)
-					// 	s.Remote_flag = !s.Remote_flag;
-				}
-			}*/
-				if(!Proximity_data->empty()) { 
-					s.Obstacle_distance = Proximity_data->getBag().back();
-					std::cout << s.Obstacle_distance << std::endl;						
-					if (s.Obstacle_distance > int(10)){
-						s.start_stop_flag = 100;
-						std::cout << " start command " << s.start_stop_flag << std::endl;
-					}
-					else
-					{
-						s.start_stop_flag = 0;
-						std::cout << " stop command " << std::endl;
-					}
-				}
+			if(!sensor_input->empty()) //for(const auto y : sensor_input->getBag())
+			{
+				x = sensor_input->getBag().back(); // const auto x : {
+				if (x==0)
+					s.Edge_flag = 1;
+				else
+					s.Edge_flag = 0;
+			}
+			else if(!sensor_input2->empty())
+			{
+				x = sensor_input2->getBag().back(); // const auto x : {
+				if (x==0)
+					s.Edge_flag = 1;
+				else
+					s.Edge_flag = 0;
+			}
+			else if(!sensor_input2->empty())
+			{
+				x = sensor_input2->getBag().back(); // const auto x : {
+				if (x==0)
+					s.Edge_flag = 1;
+				else
+					s.Edge_flag = 0;
+			}
 			s.sigma = cmdTime;
 		}
 
@@ -102,8 +106,9 @@ namespace cadmium::example::Edge_robot {
 		 * @param y reference to the atomic model output port set.
 		 */
 		void output(const motion_controller_State& s) const override {
-			wheel_speed->addMessage(s.start_stop_flag);
-			std::cout << " start stop command " << std::endl;
+
+			Out_flag ->addMessage (s.Edge_flag);
+
 		}
 
 		/**
@@ -116,6 +121,6 @@ namespace cadmium::example::Edge_robot {
 			return s.sigma;
 		}
 	};
-}  //namespace cadmium::example::cleaning_robot
+}  //namespace cadmium::example::Edge_robot
 
 #endif //CADMIUM_MOTION_CONTROLLER_HPP_
