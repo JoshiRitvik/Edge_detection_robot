@@ -100,8 +100,8 @@ namespace cadmium::example::Edge_robot {
 		 */
 		void output(const GeneratorState& state) const override {
 			out1->addMessage(state.val1);
-			out1->addMessage(state.val2);
-			out1->addMessage(state.val3);
+			out2->addMessage(state.val2);
+			out3->addMessage(state.val3);
 			std::cout << " data out" << std::endl;
 //			printf("[generator] output function\n");
 		}

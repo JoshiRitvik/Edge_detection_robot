@@ -81,7 +81,7 @@ namespace cadmium::example::Edge_robot {
 			 	}
 			if(s.Edge_flag == 0)
 			{
-				s.sigma = DrivePeriod;
+				s.sigma = DrivePeriod*3;
 			}
 			else
 				s.sigma = DrivePeriod;

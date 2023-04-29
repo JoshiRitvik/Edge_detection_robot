@@ -89,9 +89,9 @@ namespace cadmium::example::Edge_robot {
 				else
 					s.Edge_flag = 0;
 			}
-			else if(!sensor_input2->empty())
+			else if(!sensor_input3->empty())
 			{
-				x = sensor_input2->getBag().back(); // const auto x : {
+				x = sensor_input3->getBag().back(); // const auto x : {
 				if (x==0)
 					s.Edge_flag = 1;
 				else
